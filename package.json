@@ -1,0 +1,18 @@
+{
+  "name": "bargamepad",
+  "version": "1.0.0",
+  "description": "Gamepad to mouse/keyboard converter for Beyond All Reason",
+  "main": "dist/server.js",
+  "scripts": {
+    "start": "npm run build && node dist/server.js",
+    "build": "tsc && tsc -p public/tsconfig.json"
+  },
+  "dependencies": {
+    "ws": "^8.13.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/ws": "^8.5.0",
+    "typescript": "^5.0.0"
+  }
+}

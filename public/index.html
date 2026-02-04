@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BAR Gamepad Spectator</title>
+    <style>
+        body { font-family: sans-serif; background: #222; color: #fff; text-align: center; }
+        #controller { width: 600px; height: 400px; margin: 20px auto; display: none; }
+        .button { fill: #444; stroke: #888; stroke-width: 2; }
+        .active { fill: #0f0 !important; }
+        .label { font-size: 12px; fill: #fff; pointer-events: none; text-anchor: middle; }
+        #config { margin-top: 20px; text-align: left; display: inline-block; }
+        .mapping-item { margin: 5px 0; }
+        .mapping-item label { display: inline-block; width: 150px; }
+    </style>
+</head>
+<body>
+    <h1>BAR Gamepad Spectator</h1>
+    <svg id="controller" viewBox="0 0 600 400">
+        <!-- Controller Body -->
+        <rect x="150" y="100" width="300" height="200" rx="50" fill="#333" stroke="#555" />
+        <circle cx="100" cy="200" r="80" fill="#333" stroke="#555" />
+        <circle cx="500" cy="200" r="80" fill="#333" stroke="#555" />
+
+        <!-- D-Pad -->
+        <path id="btn-12" class="button" d="M100 130 v20 h-20 v20 h20 v20 h20 v-20 h20 v-20 h-20 v-20 z" /> <!-- Up -->
+        <path id="btn-13" class="button" d="M100 230 v-20 h-20 v-20 h20 v-20 h20 v20 h20 v20 h-20 v20 z" style="display:none"/> <!-- Down (placeholder) -->
+        <!-- Simplified Dpad for labels -->
+        <rect id="pad-up" x="90" y="140" width="20" height="20" class="button" />
+        <rect id="pad-down" x="90" y="180" width="20" height="20" class="button" />
+        <rect id="pad-left" x="70" y="160" width="20" height="20" class="button" />
+        <rect id="pad-right" x="110" y="160" width="20" height="20" class="button" />
+
+        <!-- Buttons -->
+        <circle id="btn-0" class="button" cx="480" cy="210" r="15" /> <!-- Bottom (A/X) -->
+        <circle id="btn-1" class="button" cx="510" cy="180" r="15" /> <!-- Right (B/O) -->
+        <circle id="btn-2" class="button" cx="450" cy="180" r="15" /> <!-- Left (X/S) -->
+        <circle id="btn-3" class="button" cx="480" cy="150" r="15" /> <!-- Top (Y/T) -->
+
+        <!-- Sticks -->
+        <circle id="stick-left" class="button" cx="200" cy="230" r="30" />
+        <circle id="stick-right" class="button" cx="400" cy="230" r="30" />
+
+        <!-- Shoulders -->
+        <rect id="btn-4" class="button" x="120" y="60" width="60" height="20" rx="5" /> <!-- L1 -->
+        <rect id="btn-5" class="button" x="420" y="60" width="60" height="20" rx="5" /> <!-- R1 -->
+        <rect id="btn-6" class="button" x="120" y="30" width="60" height="20" rx="5" /> <!-- L2 -->
+        <rect id="btn-7" class="button" x="420" y="30" width="60" height="20" rx="5" /> <!-- R2 -->
+
+        <!-- Labels -->
+        <text x="480" y="240" class="label" id="lbl-btn-0">Left Click</text>
+        <text x="540" y="185" class="label" id="lbl-btn-1">Right Click</text>
+        <text x="150" y="50" class="label" id="lbl-btn-4">Zoom Out</text>
+        <text x="450" y="50" class="label" id="lbl-btn-5">Zoom In</text>
+        <text x="200" y="275" class="label" id="lbl-stick-left">Mouse / Arrows</text>
+        <text x="400" y="275" class="label" id="lbl-stick-right">Pan (Alt+Mid)</text>
+    </svg>
+
+    <div id="status">Connect a gamepad and press a button</div>
+
+    <div id="mapping-config" style="margin: 20px auto; width: 80%; background: #333; padding: 10px; border-radius: 10px; display: none;">
+        <h3>Button Mappings</h3>
+        <table style="width: 100%">
+            <thead><tr><th>Gamepad Button</th><th>Action</th><th>Value</th><th>Label</th></tr></thead>
+            <tbody id="mapping-table"></tbody>
+        </table>
+    </div>
+
+    <div id="config" style="margin-top: 50px; background: #333; padding: 20px; border-radius: 10px;">
+        <h3>Instructions</h3>
+        <p>L3 (Press Left Stick): Toggle between Mouse and Arrow keys.</p>
+        <p>Left Stick: Move Mouse / Arrows.</p>
+        <p>Right Stick: Pan camera (Middle Click + Alt + Move).</p>
+        <p>X/A: Left Click. B/Circle: Right Click.</p>
+        <p>L1/L2/R1/R2: Zoom (Mouse Wheel).</p>
+        <p>D-Pad: Arrow keys.</p>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
