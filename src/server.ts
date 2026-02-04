@@ -68,8 +68,8 @@ while($true) {
     }
 }
 
-const vkMapLinux: any = { '38': 'Up', '40': 'Down', '37': 'Left', '39': 'Right', '33': 'Prior', '34': 'Next', '18': 'alt' };
-const vkMapMac: any = { '38': '126', '40': '125', '37': '123', '39': '124', '33': '116', '34': '121', '18': '58' };
+const vkMapLinux: any = { '38': 'Up', '40': 'Down', '37': 'Left', '39': 'Right', '32': 'space', '27': 'Escape', '18': 'alt' };
+const vkMapMac: any = { '38': '126', '40': '125', '37': '123', '39': '124', '32': '49', '27': '53', '18': '58' };
 
 function sendCmd(cmd: string) {
     const parts = cmd.split(' ');
@@ -87,9 +87,14 @@ function sendCmd(cmd: string) {
         }
         else if (action === 'W') linuxProcess.stdin?.write(`click ${parseInt(parts[1] || '0') > 0 ? '4' : '5'}\n`);
     } else if (process.platform === 'darwin') {
+        // macOS support: Mouse movement/clicks require external tools like 'cliclick'.
+        // Built-in support is limited to keyboard via AppleScript.
         if (action === 'K') {
             const code = vkMapMac[parts[1] || ''];
-            if (code) spawn('osascript', ['-e', `tell application "System Events" to ${parts[2] === '1' ? 'key down' : 'key up'} ${code}`]);
+            if (code) {
+                const script = `tell application "System Events" to ${parts[2] === '1' ? 'key down' : 'key up'} key code ${code}`;
+                spawn('osascript', ['-e', script]);
+            }
         }
     }
 }

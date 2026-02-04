@@ -6,20 +6,42 @@
     <title>BAR Gamepad Spectator</title>
     <style>
         body { font-family: sans-serif; background: #1a1a1a; color: #eee; text-align: center; margin: 0; padding: 20px; }
+        #header { display: flex; justify-content: space-between; align-items: center; max-width: 800px; margin: 0 auto; }
+        #ws-status { padding: 5px 10px; border-radius: 5px; font-size: 12px; background: #444; }
+        .ws-connected { color: #0f0; border: 1px solid #0f0; }
+        .ws-disconnected { color: #f00; border: 1px solid #f00; }
+
         #controller { width: 100%; max-width: 800px; height: auto; margin: 20px auto; display: block; filter: drop-shadow(0 0 10px rgba(0,0,0,0.5)); }
-        .button, .stick, .dpad, .body { fill: #333; stroke: #888; stroke-width: 2; transition: fill 0.1s; }
+        .body { fill: #555; stroke: #eee; stroke-width: 2; }
+        .button, .stick, .dpad { fill: #333; stroke: #eee; stroke-width: 2; transition: fill 0.1s; }
         .active { fill: #0f0 !important; stroke: #fff !important; }
         .label { font-size: 14px; fill: #fff; pointer-events: none; font-weight: bold; text-shadow: 1px 1px 2px #000; }
-        #mapping-config { margin: 20px auto; width: 95%; background: #2a2a2a; padding: 15px; border-radius: 10px; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.3); overflow-x: auto; }
+
+        #controls { margin: 20px; }
+        button { background: #444; color: #fff; border: 1px solid #666; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #555; }
+
+        #debug { margin: 20px auto; width: 95%; max-width: 800px; background: #000; color: #0f0; font-family: monospace; text-align: left; padding: 10px; border-radius: 5px; height: 100px; overflow-y: auto; font-size: 12px; }
+
+        #mapping-config { margin: 20px auto; width: 95%; max-width: 800px; background: #2a2a2a; padding: 15px; border-radius: 10px; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.3); overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { padding: 8px; border-bottom: 1px solid #444; text-align: left; font-size: 14px; }
         input, select { background: #444; color: #fff; border: 1px solid #666; padding: 4px; border-radius: 3px; font-size: 13px; }
-        #config { margin-top: 40px; background: #2a2a2a; padding: 20px; border-radius: 10px; display: inline-block; text-align: left; max-width: 600px; }
-        h1 { color: #0f0; }
+
+        #instructions-box { margin-top: 40px; background: #2a2a2a; padding: 20px; border-radius: 10px; display: inline-block; text-align: left; max-width: 600px; }
+        h1 { color: #0f0; margin: 0; }
     </style>
 </head>
 <body>
-    <h1>Beyond All Reason - Gamepad Spectator</h1>
+    <div id="header">
+        <h1>BAR Gamepad</h1>
+        <div id="ws-status" class="ws-disconnected">Server: Disconnected</div>
+    </div>
+
+    <div id="controls">
+        <button id="scan-btn">Scan for Gamepads</button>
+        <span id="status" style="margin-left: 10px;">Connect a gamepad and press a button</span>
+    </div>
 
     <svg id="controller" viewBox="0 0 800 500">
         <!-- Controller Body (Xbox style) -->
@@ -72,7 +94,7 @@
         <text x="500" y="380" class="label" id="lbl-stick-right" text-anchor="middle">Pan (Alt+Mid)</text>
     </svg>
 
-    <div id="status">Connect a gamepad and press a button</div>
+    <div id="debug">System initialized. Waiting for gamepad...</div>
 
     <div id="mapping-config">
         <h3>Button Mappings</h3>
@@ -82,7 +104,7 @@
         </table>
     </div>
 
-    <div id="config">
+    <div id="instructions-box">
         <h3>Instructions</h3>
         <p><b>L3 (Press Left Stick):</b> Toggle between Mouse and Arrow keys.</p>
         <p><b>Left Stick:</b> Move Mouse / Arrows.</p>

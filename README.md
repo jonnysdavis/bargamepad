@@ -7,7 +7,7 @@ A typescript based application that converts gamepad input to mouse and keyboard
 - Node.js installed.
 - Linux: `xdotool` installed (`sudo apt install xdotool`).
 - Windows: PowerShell (built-in).
-- macOS: osascript (built-in).
+- macOS: `osascript` (built-in). Note: macOS currently only supports keyboard mapping. Mouse control requires external tools.
 
 ## How to run
 1. `npm install`

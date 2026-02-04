@@ -1,10 +1,31 @@
 const statusEl = document.getElementById('status')!;
+const wsStatusEl = document.getElementById('ws-status')!;
+const debugEl = document.getElementById('debug')!;
 const mappingTable = document.getElementById('mapping-table')!;
 const mappingConfig = document.getElementById('mapping-config')!;
+const scanBtn = document.getElementById('scan-btn')!;
+
 const ws = new WebSocket(`ws://${location.host}`);
 let gamepadIndex: number | null = null;
 let mode: 'mouse' | 'arrows' = 'mouse';
 let lastButtons: boolean[] = [];
+
+function log(msg: string) {
+    const time = new Date().toLocaleTimeString();
+    debugEl.innerHTML = `[${time}] ${msg}<br>${debugEl.innerHTML}`.substring(0, 1000);
+}
+
+ws.onopen = () => {
+    wsStatusEl.textContent = 'Server: Connected';
+    wsStatusEl.className = 'ws-connected';
+    log('WebSocket connected');
+};
+
+ws.onclose = () => {
+    wsStatusEl.textContent = 'Server: Disconnected';
+    wsStatusEl.className = 'ws-disconnected';
+    log('WebSocket disconnected');
+};
 
 interface ButtonMapping {
     id: number;
@@ -18,7 +39,7 @@ interface ButtonMapping {
 const mappings: ButtonMapping[] = [
     { id: 2, name: 'X (Left)', cmd: 'LC', label: 'Left Click', labelId: 'lbl-btn-2' },
     { id: 1, name: 'B (Right)', cmd: 'RC', label: 'Right Click', labelId: 'lbl-btn-1' },
-    { id: 0, name: 'A (Bottom)', cmd: 'K', val: 32, label: 'Space', labelId: 'lbl-btn-0' }, // Map A to Space by default
+    { id: 0, name: 'A (Bottom)', cmd: 'K', val: 32, label: 'Space', labelId: 'lbl-btn-0' },
     { id: 3, name: 'Y (Top)', cmd: 'K', val: 27, label: 'Esc', labelId: 'lbl-btn-3' },
     { id: 4, name: 'LB', cmd: 'W', val: -120, label: 'Zoom Out', labelId: 'lbl-btn-4' },
     { id: 5, name: 'RB', cmd: 'W', val: 120, label: 'Zoom In', labelId: 'lbl-btn-5' },
@@ -36,18 +57,21 @@ function renderMappings() {
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${m.name}</td>
-            <td><select onchange="window.updateMapping(${i}, 'cmd', this.value)">
+            <td><select id="sel-${i}">
                 <option value="LC" ${m.cmd === 'LC' ? 'selected' : ''}>Left Click</option>
                 <option value="RC" ${m.cmd === 'RC' ? 'selected' : ''}>Right Click</option>
                 <option value="W" ${m.cmd === 'W' ? 'selected' : ''}>Wheel/Zoom</option>
                 <option value="K" ${m.cmd === 'K' ? 'selected' : ''}>Key</option>
             </select></td>
-            <td><input type="number" value="${m.val || ''}" style="width: 50px" onchange="window.updateMapping(${i}, 'val', parseInt(this.value))"></td>
-            <td><input type="text" value="${m.label}" style="width: 80px" onchange="window.updateMapping(${i}, 'label', this.value)"></td>
+            <td><input type="number" id="val-${i}" value="${m.val || ''}" style="width: 50px"></td>
+            <td><input type="text" id="lbl-in-${i}" value="${m.label}" style="width: 80px"></td>
         `;
         mappingTable.appendChild(tr);
+
+        document.getElementById(`sel-${i}`)!.onchange = (e) => updateMapping(i, 'cmd', (e.target as HTMLSelectElement).value);
+        document.getElementById(`val-${i}`)!.onchange = (e) => updateMapping(i, 'val', parseInt((e.target as HTMLInputElement).value));
+        document.getElementById(`lbl-in-${i}`)!.onchange = (e) => updateMapping(i, 'label', (e.target as HTMLInputElement).value);
     });
-    // Initialize labels
     mappings.forEach((_, i) => updateLabel(i));
 }
 
@@ -59,27 +83,50 @@ function updateLabel(i: number) {
     }
 }
 
-(window as any).updateMapping = (i: number, key: keyof ButtonMapping, val: any) => {
+function updateMapping(i: number, key: keyof ButtonMapping, val: any) {
     (mappings[i] as any)[key] = val;
     updateLabel(i);
-};
+    log(`Updated mapping ${mappings[i]!.name}: ${key}=${val}`);
+}
+
+(window as any).updateMapping = updateMapping;
 
 function onGamepadConnected(index: number, id: string) {
+    if (gamepadIndex === index) return;
     gamepadIndex = index;
-    statusEl.textContent = `Gamepad connected: ${id}`;
+    statusEl.textContent = `Active: ${id}`;
     mappingConfig.style.display = 'block';
     renderMappings();
+    log(`Gamepad detected at index ${index}: ${id}`);
 }
 
 window.addEventListener("gamepadconnected", (e) => {
     onGamepadConnected((e as GamepadEvent).gamepad.index, (e as GamepadEvent).gamepad.id);
 });
 
-window.addEventListener("gamepaddisconnected", () => {
-    gamepadIndex = null;
-    statusEl.textContent = "Gamepad disconnected. Press a button to reconnect.";
-    mappingConfig.style.display = 'none';
+window.addEventListener("gamepaddisconnected", (e) => {
+    const disconnectedIndex = (e as GamepadEvent).gamepad.index;
+    if (gamepadIndex === disconnectedIndex) {
+        gamepadIndex = null;
+        statusEl.textContent = "Gamepad disconnected";
+        mappingConfig.style.display = 'none';
+        log(`Gamepad disconnected from index ${disconnectedIndex}`);
+    }
 });
+
+scanBtn.onclick = () => {
+    const gamepads = navigator.getGamepads();
+    log(`Scanning... found ${gamepads.filter(g => g !== null).length} devices`);
+    let found = false;
+    for (let i = 0; i < gamepads.length; i++) {
+        if (gamepads[i]) {
+            onGamepadConnected(i, gamepads[i]!.id);
+            found = true;
+            break;
+        }
+    }
+    if (!found) log("No gamepads found. Try pressing a button on the controller.");
+};
 
 function send(msg: string) {
     if (ws.readyState === WebSocket.OPEN) ws.send(msg);
@@ -89,11 +136,18 @@ let rightStickActive = false;
 
 function update() {
     const gamepads = navigator.getGamepads();
+
+    // Auto-detect any active gamepad if none selected
     if (gamepadIndex === null) {
         for (let i = 0; i < gamepads.length; i++) {
-            if (gamepads[i]) {
-                onGamepadConnected(i, gamepads[i]!.id);
-                break;
+            const gp = gamepads[i];
+            if (gp) {
+                // If any button is pressed or axis moved significantly, select it
+                const hasInput = gp.buttons.some(b => b.pressed) || gp.axes.some(a => Math.abs(a) > 0.5);
+                if (hasInput) {
+                    onGamepadConnected(i, gp.id);
+                    break;
+                }
             }
         }
     }
@@ -104,13 +158,16 @@ function update() {
         return;
     }
 
+    // Toggle mode with L3 (Button 10)
     if (gp.buttons[10]?.pressed && !(window as any).l3Pressed) {
         mode = mode === 'mouse' ? 'arrows' : 'mouse';
         const label = document.getElementById('lbl-stick-left');
         if (label) label.textContent = mode === 'mouse' ? 'Mouse' : 'Arrows';
+        log(`Left Stick Mode: ${mode.toUpperCase()}`);
     }
     (window as any).l3Pressed = gp.buttons[10]?.pressed;
 
+    // Sticks
     const lx = Math.abs(gp.axes[0] || 0) > 0.1 ? (gp.axes[0] || 0) : 0;
     const ly = Math.abs(gp.axes[1] || 0) > 0.1 ? (gp.axes[1] || 0) : 0;
     if (mode === 'mouse') {
@@ -130,6 +187,7 @@ function update() {
     if (nowRightActive) send(`M ${Math.round(rx * 15)} ${Math.round(ry * 15)}`);
     rightStickActive = nowRightActive;
 
+    // Buttons
     mappings.forEach(m => {
         const b = gp.buttons[m.id];
         if (b && b.pressed !== lastButtons[m.id]) {
@@ -143,6 +201,7 @@ function update() {
         }
     });
 
+    // Visual feedback
     gp.buttons.forEach((b, i) => {
         document.getElementById(`btn-${i}`)?.classList.toggle('active', b.pressed);
     });
