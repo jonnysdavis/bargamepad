@@ -54,9 +54,18 @@ while($true) {
 }
 `;
     psProcess = spawn('powershell', ['-Command', '-'], { stdio: ['pipe', 'inherit', 'inherit'] });
+    psProcess.on('error', (err) => console.error('PowerShell error:', err));
     psProcess.stdin?.write(psCode + '\n');
 } else if (process.platform === 'linux') {
-    linuxProcess = spawn('xdotool', ['-'], { stdio: ['pipe', 'inherit', 'inherit'] });
+    try {
+        linuxProcess = spawn('xdotool', ['-'], { stdio: ['pipe', 'inherit', 'inherit'] });
+        linuxProcess.on('error', (err) => {
+            console.error('xdotool error (likely not installed):', err.message);
+            linuxProcess = null;
+        });
+    } catch (e) {
+        console.error('Failed to spawn xdotool');
+    }
 }
 
 const vkMapLinux: any = { '38': 'Up', '40': 'Down', '37': 'Left', '39': 'Right', '33': 'Prior', '34': 'Next', '18': 'alt' };
@@ -65,9 +74,9 @@ const vkMapMac: any = { '38': '126', '40': '125', '37': '123', '39': '124', '33'
 function sendCmd(cmd: string) {
     const parts = cmd.split(' ');
     const action = parts[0];
-    if (psProcess) {
+    if (psProcess && psProcess.stdin?.writable) {
         psProcess.stdin?.write(cmd + '\n');
-    } else if (linuxProcess) {
+    } else if (linuxProcess && linuxProcess.stdin?.writable) {
         if (action === 'M') linuxProcess.stdin?.write(`mousemove_relative -- ${parts[1]} ${parts[2]}\n`);
         else if (action === 'LC') linuxProcess.stdin?.write(`${parts[1] === '1' ? 'mousedown' : 'mouseup'} 1\n`);
         else if (action === 'RC') linuxProcess.stdin?.write(`${parts[1] === '1' ? 'mousedown' : 'mouseup'} 3\n`);
@@ -82,11 +91,11 @@ function sendCmd(cmd: string) {
             const code = vkMapMac[parts[1] || ''];
             if (code) spawn('osascript', ['-e', `tell application "System Events" to ${parts[2] === '1' ? 'key down' : 'key up'} ${code}`]);
         }
-        // macOS mouse support is limited without external tools like cliclick
     }
 }
 
 wss.on('connection', (ws) => {
+    console.log('Client connected');
     ws.on('message', (message) => {
         const data = message.toString();
         if (/^[MLRCWKA-Z0-9\s-]+$/i.test(data)) {
